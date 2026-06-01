@@ -5,7 +5,9 @@ from afisare import (
     afiseaza_featureuri,
     afiseaza_logistic_regression,
     afiseaza_predictii_test,
+    afiseaza_praguri_ml,
     afiseaza_rezumat,
+    afiseaza_semnale_ml,
 )
 from data_processing import pregateste_date
 from logistic_regression import (
@@ -14,6 +16,7 @@ from logistic_regression import (
     predict_probability,
     train_logistic_regression,
 )
+from ml_signal import adauga_ml_signal, calculeaza_praguri_ml
 from train_test import imparte_train_test, normalizeaza_featureuri
 
 
@@ -44,16 +47,23 @@ def main():
     train_data["ml_probability"] = train_probabilities
     test_data["ml_probability"] = test_probabilities
 
-    # 7. verificam acuratetea
+    # 7. transformam probabilitatea in semnal discret
+    lower_threshold, upper_threshold = calculeaza_praguri_ml(train_data)
+    train_data = adauga_ml_signal(train_data, lower_threshold, upper_threshold)
+    test_data = adauga_ml_signal(test_data, lower_threshold, upper_threshold)
+
+    # 8. verificam acuratetea
     train_accuracy = calculate_accuracy(train_probabilities, y_train)
     test_accuracy = calculate_accuracy(test_probabilities, y_test)
 
-    # 8. afisam ce am obtinut
+    # 9. afisam ce am obtinut
     afiseaza_rezumat(data, train_data, test_data)
     afiseaza_featureuri()
     afiseaza_exemplu_normalizare(train_data)
     afiseaza_logistic_regression(w, b, train_accuracy, test_accuracy)
     afiseaza_predictii_test(test_data)
+    afiseaza_praguri_ml(lower_threshold, upper_threshold)
+    afiseaza_semnale_ml(test_data)
 
 
 if __name__ == "__main__":

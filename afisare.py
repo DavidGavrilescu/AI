@@ -66,3 +66,18 @@ def afiseaza_predictii_test(test_data):
     predictii["ml_probability"] = predictii["ml_probability"].round(4)
 
     print(predictii.to_string(index=False))
+
+
+def afiseaza_praguri_ml(lower_threshold, upper_threshold):
+    print("\nPraguri pentru ml_signal:")
+    print(f"Lower threshold: {lower_threshold:.4f}")
+    print(f"Upper threshold: {upper_threshold:.4f}")
+
+
+def afiseaza_semnale_ml(test_data):
+    print("\nPrimele semnale ML pe test:")
+
+    semnale = test_data[["Date", "ml_probability", "ml_signal", "label"]].head(10).copy()
+    semnale["ml_probability"] = semnale["ml_probability"].round(4)
+
+    print(semnale.to_string(index=False))
