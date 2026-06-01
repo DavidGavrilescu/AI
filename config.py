@@ -8,6 +8,12 @@ TREND_THRESHOLD = 0.005
 LEARNING_RATE = 0.1
 EPOCHS = 5000
 
+# benchmarks
+INITIAL_CASH = 100000
+TRANSACTION_COST = 0.001  # 0.1% per trade
+RANDOM_RUNS = 30
+RANDOM_SEED = 42
+
 # daca probabilitatea prezisa e peste acest prag, modelul prezice clasa 1
 THRESHOLD_PREDICTIE = 0.5
 

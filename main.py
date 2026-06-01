@@ -1,6 +1,7 @@
 import pandas as pd
 
 from afisare import afiseaza_rezultate
+from benchmark import compara_benchmark
 from data_processing import pregateste_date
 from logistic_regression import (
     calculate_accuracy,
@@ -68,6 +69,11 @@ def main():
         train_accuracy,
         test_accuracy,
     )
+
+    # 11 benchmaks
+    benchmark_results = compara_benchmark(test_data)
+    print("\nBenchmark simplu:")
+    print(benchmark_results.to_string(index=False))
 
 
 if __name__ == "__main__":
