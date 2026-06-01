@@ -1,4 +1,4 @@
-from config import FEATURE_COLUMNS, TICKER
+from config import FEATURE_COLUMNS, NORMALIZED_FEATURE_COLUMNS, TICKER
 
 
 def afiseaza_rezumat(data, train_data, test_data):
@@ -47,3 +47,22 @@ def afiseaza_exemplu_normalizare(train_data):
     })
 
     print(example.to_string(index=False))
+
+
+def afiseaza_logistic_regression(w, b, train_accuracy, test_accuracy):
+    print("\nPonderi Logistic Regression:")
+    for column, weight in zip(NORMALIZED_FEATURE_COLUMNS, w):
+        print(f"{column}: {weight:.6f}")
+
+    print(f"\nBias: {b:.6f}")
+    print(f"Train accuracy: {train_accuracy:.2f}%")
+    print(f"Test accuracy:  {test_accuracy:.2f}%")
+
+
+def afiseaza_predictii_test(test_data):
+    print("\nPrimele predictii pe test:")
+
+    predictii = test_data[["Date", "ml_probability", "label"]].head(10).copy()
+    predictii["ml_probability"] = predictii["ml_probability"].round(4)
+
+    print(predictii.to_string(index=False))
