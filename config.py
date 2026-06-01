@@ -8,11 +8,13 @@ TREND_THRESHOLD = 0.005
 LEARNING_RATE = 0.1
 EPOCHS = 5000
 
-# daca probabilitatea prezisa de model e peste acest prag
-# tunci modelul prezice ca pretul va creste
+# daca probabilitatea prezisa e peste acest prag, modelul prezice clasa 1
 THRESHOLD_PREDICTIE = 0.5
 
-# o sa fie folosite la Logistuic regression nu includem future_return, future_return_5d sau label, pentru ca tin de viitor
+# zona de incertitudine pentru ml_signal
+SIGNAL_MARGIN = 0.01
+
+# folosite la Logistic Regression, fara coloane din viitor
 FEATURE_COLUMNS = [
     "daily_return",
     "open_close_return",

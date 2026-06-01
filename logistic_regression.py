@@ -11,7 +11,7 @@ def sigmoid(z):
 def get_model_data(data):
     # X are feature-urile, y are raspunsul corect
     X = data[NORMALIZED_FEATURE_COLUMNS].values
-    y = data["label"].values
+    y = data["ml_label"].values
 
     return X, y
 
@@ -47,7 +47,8 @@ def train_logistic_regression(X, y):
 
 
 def predict_probability(X, w, b):
-    # calculam probabilitatea ca pretul sa creasca maine
+    # calculam probabilitatea ca 
+    # randamentul pe 5 zile sa fie peste mediana din train
     z = X @ w + b
     return sigmoid(z)
 

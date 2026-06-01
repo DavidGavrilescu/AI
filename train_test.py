@@ -1,4 +1,4 @@
-from config import FEATURE_COLUMNS, TRAIN_RATIO
+from config import FEATURE_COLUMNS, NORMALIZED_FEATURE_COLUMNS, TRAIN_RATIO
 
 
 def imparte_train_test(data):
@@ -11,15 +11,32 @@ def imparte_train_test(data):
     return train_data, test_data
 
 
+def adauga_ml_label_dupa_mediana_train(train_data, test_data):
+    train_data = train_data.copy()
+    test_data = test_data.copy()
+
+    # SPY are bias de crestere, deci folosim mediana din train ca prag
+    # pragul se calculeaza doar pe train ca sa evitam data leakage
+    ml_threshold = train_data["future_return_5d"].median()
+
+    train_data["ml_label"] = (
+        train_data["future_return_5d"] > ml_threshold
+    ).astype(int)
+    test_data["ml_label"] = (
+        test_data["future_return_5d"] > ml_threshold
+    ).astype(int)
+
+    return train_data, test_data, ml_threshold
+
+
 def normalizeaza_featureuri(train_data, test_data):
     train_data = train_data.copy()
     test_data = test_data.copy()
 
     # normalizarea se calculeaza doar pe train
-    for column in FEATURE_COLUMNS:
+    for column, norm_column in zip(FEATURE_COLUMNS, NORMALIZED_FEATURE_COLUMNS):
         train_min = train_data[column].min()
         train_max = train_data[column].max()
-        norm_column = column + "_norm"
 
         train_data[norm_column] = (train_data[column] - train_min) / (train_max - train_min)
         test_data[norm_column] = (test_data[column] - train_min) / (train_max - train_min)
