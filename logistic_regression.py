@@ -1,10 +1,15 @@
 import numpy as np
 
-from config import EPOCHS, LEARNING_RATE, NORMALIZED_FEATURE_COLUMNS, THRESHOLD_PREDICTIE
+from config import (
+    EPOCHS,
+    LEARNING_RATE,
+    NORMALIZED_FEATURE_COLUMNS,
+    THRESHOLD_PREDICTIE,
+)
 
 
 def sigmoid(z):
-    # g(z) = sigmoid(z)
+    # transforma scorul in probabilitate intre 0 si 1
     return 1 / (1 + np.exp(-z))
 
 
@@ -21,21 +26,20 @@ def train_logistic_regression(X, y):
     numar_exemple = X.shape[0]
     numar_featureuri = X.shape[1]
 
-    w = np.zeros(numar_featureuri) # initializam ponderile cu 0
-    b = 0 # initializam bias-ul cu 0
+    w = np.zeros(numar_featureuri) # ponderi
+    b = 0 # bias
 
     for _ in range(EPOCHS):
         # z = combinatia liniara dintre feature-uri si ponderi
-        # @ = operatorul de produs matriceal
         z = X @ w + b
 
-        # g_z = g(z)
+        # probabilitatea prezisa de model
         g_z = sigmoid(z)
 
-        # error = diferenta dintre predictie si raspunsul real
+        # cat de departe e predictia de raspunsul real
         error = g_z - y
 
-        # gradientii ne spun cum schimbam w si b
+        # gradientii spun in ce directie schimbam w si b
         dw = X.T @ error / numar_exemple
         db = np.mean(error)
 
@@ -47,15 +51,36 @@ def train_logistic_regression(X, y):
 
 
 def predict_probability(X, w, b):
-    # calculam probabilitatea ca 
-    # randamentul pe 5 zile sa fie peste mediana din train
+    # probabilitatea ca randamentul pe 5 zile sa fie peste mediana
     z = X @ w + b
     return sigmoid(z)
 
 
 def calculate_accuracy(probabilities, y):
     # peste THRESHOLD_PREDICTIE inseamna ca modelul prezice 1
-    prediction = probabilities >= THRESHOLD_PREDICTIE
-    correct = prediction == y
+    predictii = probabilities >= THRESHOLD_PREDICTIE
+    corecte = predictii == y
 
-    return correct.mean() * 100 # returnam acuratetea in procente
+    return corecte.mean() * 100
+
+# functia principala
+def ruleaza_model_lr(train_data, test_data):
+    X_train, y_train = get_model_data(train_data)
+    X_test, y_test = get_model_data(test_data)
+
+    w, b = train_logistic_regression(X_train, y_train)
+
+    train_probabilities = predict_probability(X_train, w, b)
+    test_probabilities = predict_probability(X_test, w, b)
+
+    train_accuracy = calculate_accuracy(train_probabilities, y_train)
+    test_accuracy = calculate_accuracy(test_probabilities, y_test)
+
+    return (
+        w,
+        b,
+        train_probabilities,
+        test_probabilities,
+        train_accuracy,
+        test_accuracy,
+    )
