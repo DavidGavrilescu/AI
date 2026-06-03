@@ -10,6 +10,31 @@ from q_learning import alege_actiune_finala, stare_q_learning
 BUY = "BUY"
 SELL = "SELL"
 HOLD = "HOLD"
+ZILE_TRANZACTIONARE = 252
+
+"""
+Calculeaza sharpe ratio si max drawdown
+    - Sharpe Ratio arata randamentul raportat la risc/volatilitate
+    - Max Drawdown arata cea mai mare scadere fata de maximul anterior
+"""
+def calculeaza_sharpe_max_dd(valori_portofoliu):
+    valori_portofoliu = np.array(valori_portofoliu)
+    randamente_zilnice = valori_portofoliu[1:] / valori_portofoliu[:-1] - 1
+
+    if randamente_zilnice.std() == 0:
+        sharpe_ratio = 0
+    else:
+        sharpe_ratio = (
+            randamente_zilnice.mean()
+            / randamente_zilnice.std()
+            * np.sqrt(ZILE_TRANZACTIONARE)
+        )
+
+    maxim_pana_acum = np.maximum.accumulate(valori_portofoliu)
+    drawdown = (valori_portofoliu / maxim_pana_acum - 1) * 100
+    max_drawdown = abs(drawdown.min())
+
+    return sharpe_ratio, max_drawdown
 
 
 def simuleaza_actiuni(date_test, alege_actiunea):
@@ -18,6 +43,7 @@ def simuleaza_actiuni(date_test, alege_actiunea):
     actiuni_detinute = 0
     tranzactii_facute = 0
     zile_in_piata = 0
+    valori_portofoliu = [CASH_INITIAL]
 
     # decizia de azi se executa maine
     for i in range(len(preturi) - 1):
@@ -37,17 +63,22 @@ def simuleaza_actiuni(date_test, alege_actiunea):
         if actiuni_detinute > 0:
             zile_in_piata += 1
 
-    valoare_finala = cash + actiuni_detinute * preturi[-1]
-    expunere = zile_in_piata / len(date_test) * 100
+        valori_portofoliu.append(cash + actiuni_detinute * pret)
 
-    return valoare_finala, tranzactii_facute, expunere
+    valoare_finala = valori_portofoliu[-1]
+    expunere = zile_in_piata / len(date_test) * 100
+    sharpe_ratio, max_drawdown = calculeaza_sharpe_max_dd(valori_portofoliu)
+
+    return valoare_finala, tranzactii_facute, expunere, sharpe_ratio, max_drawdown
 
 
 def ruleaza_buy_and_hold(date_test):
     preturi = date_test["Close"].to_numpy()
     actiuni_detinute = CASH_INITIAL * (1 - TRANSACTION_COST) / preturi[0]
+    valori_portofoliu = [CASH_INITIAL, *list(actiuni_detinute * preturi)]
+    sharpe_ratio, max_drawdown = calculeaza_sharpe_max_dd(valori_portofoliu)
 
-    return actiuni_detinute * preturi[-1], 1, 100
+    return actiuni_detinute * preturi[-1], 1, 100, sharpe_ratio, max_drawdown
 
 
 def ruleaza_logistic_regression_only(date_test):
@@ -112,6 +143,8 @@ def compara_strategii(date_test, q_table=None):
         "valoare finala",
         "tranzactii",
         "expunere %",
+        "Sharpe Ratio",
+        "Max Drawdown %",
     ])
     rezultate["randament %"] = (rezultate["valoare finala"] / CASH_INITIAL - 1) * 100
     rezultate = rezultate[[
@@ -120,6 +153,8 @@ def compara_strategii(date_test, q_table=None):
         "randament %",
         "tranzactii",
         "expunere %",
+        "Sharpe Ratio",
+        "Max Drawdown %",
     ]]
 
     return rezultate.round({
@@ -127,4 +162,6 @@ def compara_strategii(date_test, q_table=None):
         "randament %": 2,
         "tranzactii": 2,
         "expunere %": 2,
+        "Sharpe Ratio": 2,
+        "Max Drawdown %": 2,
     })
