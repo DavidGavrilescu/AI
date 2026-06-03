@@ -32,23 +32,21 @@ def adauga_ml_label(train_data, test_data):
 
     return train_data, test_data, prag_mediana_train
 
-"""
-normalizeaza coloanele de features folosind min-max normalization
-- Datele originale (Open, High, Low, Close, Volume)
-- future_return_5d (randamentul viitor pe 5 zile)
-- ml_label (1 daca future_return_5d > prag_mediana_train, altfel 0)
-"""
+
 def normalizeaza_features(train_data, test_data):
+    """
+    Normalizarea pune toate feature-urile pe o scara apropiata.
+    Exemplu: x_norm = (x - min_train) / (max_train - min_train)
+    """
     train_data = train_data.copy()
     test_data = test_data.copy()
-    
-    # min si max din train ca sa nu influenteze testul
+
+    # min si max se iau doar din train ca sa nu influenteze testul
     for coloana, coloana_norm in zip(FEATURE_COLUMNS, NORMALIZED_FEATURE_COLUMNS):
         minim_train = train_data[coloana].min()
         maxim_train = train_data[coloana].max()
         diferenta = maxim_train - minim_train
 
-        # x_norm = (x - min_train) / (max_train - min_train)
         train_data[coloana_norm] = (
             train_data[coloana] - minim_train
         ) / diferenta
@@ -57,6 +55,7 @@ def normalizeaza_features(train_data, test_data):
         ) / diferenta
 
     return train_data, test_data
+
 
 def pregateste_train_test(data):
     train_data, test_data = split_date(data)

@@ -1,7 +1,7 @@
 import pandas as pd
 
 from afisare import afiseaza_rezultate
-from benchmark import compara_benchmark
+from benchmark import compara_strategii
 from data_processing import pregateste_date
 from logistic_regression import ruleaza_logistic_regression
 from ml_signal import adauga_ml_signal
@@ -14,23 +14,23 @@ def main():
     pd.set_option("display.width", 200)
 
     # pregatim datele
-    data = pregateste_date()
+    date = pregateste_date()
 
     # train/test + target pentru LR
-    train_data, test_data, ml_threshold = pregateste_train_test(data)
+    train_data, test_data, prag_mediana_train = pregateste_train_test(date)
 
     # antrenam Logistic Regression
     (
         w,
         b,
-        train_probabilities,
-        test_probabilities,
-        train_accuracy,
-        test_accuracy,
+        probabilitati_training,
+        probabilitati_test,
+        acuratete_training,
+        acuratete_test,
     ) = ruleaza_logistic_regression(train_data, test_data)
 
-    train_data["ml_probability"] = train_probabilities
-    test_data["ml_probability"] = test_probabilities
+    train_data["ml_probability"] = probabilitati_training
+    test_data["ml_probability"] = probabilitati_test
 
     # transformam probabilitatea in semnal discret
     train_data = adauga_ml_signal(train_data)
@@ -41,20 +41,20 @@ def main():
 
     # output scurt pentru model
     afiseaza_rezultate(
-        data,
+        date,
         train_data,
         test_data,
         w,
         b,
-        ml_threshold,
-        train_accuracy,
-        test_accuracy,
+        prag_mediana_train,
+        acuratete_training,
+        acuratete_test,
     )
 
     # comparam doar strategiile finale
-    benchmark_results = compara_benchmark(test_data, q_table)
+    rezultate_benchmark = compara_strategii(test_data, q_table)
     print("\nbenchmark:")
-    print(benchmark_results.to_string(index=False))
+    print(rezultate_benchmark.to_string(index=False))
 
 
 if __name__ == "__main__":

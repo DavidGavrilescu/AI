@@ -7,30 +7,28 @@ from config import (
 )
 
 
-def calculeaza_baseline(data):
-    # baseline = cat luam daca prezicem mereu clasa majoritara
-    return data["ml_label"].value_counts(normalize=True).max() * 100
+def calculeaza_baseline(date):
+    # baseline: valoarea ml_label cea mai frecventa (buy, hold sau sell)
+    return date["ml_label"].value_counts(normalize=True).max() * 100
 
-
-def afiseaza_interval(nume, data):
+def afiseaza_interval(nume, date):
     print(
-        f"{nume}: {data['Date'].min().date()} -> "
-        f"{data['Date'].max().date()} ({len(data)} randuri)"
+        f"{nume}: {date['Date'].min().date()} -> "
+        f"{date['Date'].max().date()} ({len(date)} randuri)"
     )
 
-
 def afiseaza_rezultate(
-    data,
+    date,
     train_data,
     test_data,
     w,
     b,
-    ml_threshold,
-    train_accuracy,
-    test_accuracy,
+    prag_mediana_train,
+    acuratete_training,
+    acuratete_test,
 ):
     print(f"ticker: {TICKER}")
-    print(f"randuri dupa curatare: {len(data)}")
+    print(f"randuri dupa curatare: {len(date)}")
     afiseaza_interval("train", train_data)
     afiseaza_interval("test", test_data)
 
@@ -39,23 +37,23 @@ def afiseaza_rezultate(
         print(f"- {column}")
 
     print("\nLR:")
-    print(f"target: future_return_5d > mediana train ({ml_threshold:.6f})")
+    print(f"target: future_return_5d > mediana train ({prag_mediana_train:.6f})")
     print(
         f"baseline train/test: "
         f"{calculeaza_baseline(train_data):.2f}% / "
         f"{calculeaza_baseline(test_data):.2f}%"
     )
-    print(f"accuracy train/test: {train_accuracy:.2f}% / {test_accuracy:.2f}%")
+    print(f"accuracy train/test: {acuratete_training:.2f}% / {acuratete_test:.2f}%")
     print(f"bias: {b:.6f}")
 
     print("\nponderi LR:")
-    for column, weight in zip(NORMALIZED_FEATURE_COLUMNS, w):
-        print(f"{column}: {weight:.6f}")
+    for coloana, pondere in zip(NORMALIZED_FEATURE_COLUMNS, w):
+        print(f"{coloana}: {pondere:.6f}")
 
-    lower_threshold = THRESHOLD_PREDICTIE - SIGNAL_MARGIN
-    upper_threshold = THRESHOLD_PREDICTIE + SIGNAL_MARGIN
+    prag_jos = THRESHOLD_PREDICTIE - SIGNAL_MARGIN
+    prag_sus = THRESHOLD_PREDICTIE + SIGNAL_MARGIN
 
     print("\nml_signal:")
-    print(f"0 daca prob < {lower_threshold:.2f}")
-    print(f"1 daca prob e intre {lower_threshold:.2f} si {upper_threshold:.2f}")
-    print(f"2 daca prob > {upper_threshold:.2f}")
+    print(f"0 daca prob < {prag_jos:.2f}")
+    print(f"1 daca prob e intre {prag_jos:.2f} si {prag_sus:.2f}")
+    print(f"2 daca prob > {prag_sus:.2f}")

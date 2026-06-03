@@ -11,7 +11,7 @@ def incarca_date_spy():
     if os.path.exists(DATA_FILE):
         return pd.read_csv(DATA_FILE, parse_dates=["Date"])
 
-    data = yf.download(
+    date = yf.download(
         TICKER,
         start=START_DATE,
         end=END_DATE,
@@ -19,36 +19,52 @@ def incarca_date_spy():
         progress=False,
         multi_level_index=False,
     )
-    data = data.reset_index()
-    data.to_csv(DATA_FILE, index=False)
+    date = date.reset_index()
+    date.to_csv(DATA_FILE, index=False)
 
-    return data
+    return date
 
 
 def pregateste_date():
-    data = incarca_date_spy()
+    date = incarca_date_spy()
 
-    # feature-uri din pret si volum
-    data["daily_return"] = data["Close"].pct_change()
-    data["open_close_return"] = (data["Close"] - data["Open"]) / data["Open"]
-    data["high_low_range"] = (data["High"] - data["Low"]) / data["Close"]
-    data["volume_change"] = data["Volume"].pct_change()
+    """
+        Construim feature-uri din pret si volum.
 
-    # moving average pentru trend
-    data["ma_5"] = data["Close"].rolling(window=5).mean()
-    data["ma_20"] = data["Close"].rolling(window=20).mean()
-    data["ma_ratio"] = data["ma_5"] / data["ma_20"] - 1
+        Feature-uri folosite de Logistic Regression:
+        - daily_return: randamentul fata de ziua precedenta
+        - open_close_return: miscarea din aceeasi zi, de la Open la Close
+        - high_low_range: intervalul High-Low raportat la Close, ca masura simpla de volatilitate
+        - volume_change: schimbarea volumului fata de ziua precedenta
+        - ma_ratio: diferenta relativa dintre media mobila pe 5 zile si cea pe 20 de zile
 
-    # randamente viitoare, folosite doar pentru target si reward
-    data["future_return"] = data["Close"].shift(-1) / data["Close"] - 1
-    data["future_return_5d"] = data["Close"].shift(-5) / data["Close"] - 1
+        Coloane folosite pentru ML label si RL reward:
+        - trend: 0 = descendent, 1 = neutru, 2 = ascendent, calculat din ma_ratio
+        - future_return: randamentul zilei urmatoare
+        - future_return_5d: randamentul peste 5 zile, folosit pentru label-ul ML si reward-ul RL
+
+        Valorile future_return si future_return_5d sunt folosite doar ca target/reward, nu ca feature-uri de intrare pentru model.
+    """
+    date["daily_return"] = date["Close"].pct_change()
+    date["open_close_return"] = (date["Close"] - date["Open"]) / date["Open"]
+    date["high_low_range"] = (date["High"] - date["Low"]) / date["Close"]
+    date["volume_change"] = date["Volume"].pct_change()
+
+    # moving average pe 5 si 20 de zile, folosita pentru trend
+    date["ma_5"] = date["Close"].rolling(window=5).mean()
+    date["ma_20"] = date["Close"].rolling(window=20).mean()
+    date["ma_ratio"] = date["ma_5"] / date["ma_20"] - 1
+
+    # randamente viitoare, folosite la label si reward
+    date["future_return"] = date["Close"].shift(-1) / date["Close"] - 1
+    date["future_return_5d"] = date["Close"].shift(-5) / date["Close"] - 1
 
     # 0 = descendent, 1 = neutru, 2 = ascendent
-    data["trend"] = 1
-    data.loc[data["ma_ratio"] > TREND_THRESHOLD, "trend"] = 2
-    data.loc[data["ma_ratio"] < -TREND_THRESHOLD, "trend"] = 0
+    date["trend"] = 1
+    date.loc[date["ma_ratio"] > TREND_THRESHOLD, "trend"] = 2
+    date.loc[date["ma_ratio"] < -TREND_THRESHOLD, "trend"] = 0
 
-    # primele randuri nu au moving average, iar ultimele nu au randamente viitoare
-    data = data.dropna().reset_index(drop=True)
+    # primele randuri nu au medii mobile, ultimele nu au randamente viitoare
+    date = date.dropna().reset_index(drop=True)
 
-    return data
+    return date

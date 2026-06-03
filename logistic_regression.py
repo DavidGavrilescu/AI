@@ -20,7 +20,7 @@ def get_date_model(data):
 
 
 def train_logistic_regression(X, y):
-    numar_exemple, numar_featureuri  = X.shape
+    numar_exemple, numar_featureuri = X.shape
 
     w = np.zeros(numar_featureuri) # ponderile sunt 0 la inceput
     b = 0
@@ -36,31 +36,22 @@ def train_logistic_regression(X, y):
         # eroarea folosita in gradient descent
         delta_E = g_z - y
 
-
-        """
-        X = [
-            [feature1_zi1, feature2_zi1],
-            [feature1_zi2, feature2_zi2],
-            [feature1_zi3, feature2_zi3]
-        ]
-        transpusa_X = [
-            [feature1_zi1, feature1_zi2, feature1_zi3],
-            [feature2_zi1, feature2_zi2, feature2_zi3]
-        ]
-        """
+        # X.T intoarce matricea ca sa putem calcula gradientul pentru fiecare pondere
         transpusa_X = X.T
-        
+
         dw = transpusa_X @ delta_E / numar_exemple
         db = np.mean(delta_E)
 
         # gradient descent
         w = w - alpha * dw
         b = b - alpha * db
+
     return w, b
 
-# x e matrice de features, il inmultim cu ponderile w si adaugam biasl
+# X este matricea de features, o inmultim cu ponderile w si adaugam bias-ul
 def prezicere_probabilitati(X, w, b):
     return g(X @ w + b)
+
 
 # returneaza procentul de predictii corecte
 def calculeaza_acuratetea(probabilitati, y):
@@ -73,9 +64,10 @@ def calculeaza_acuratetea(probabilitati, y):
 
     # clasa prezisa dupa pragul de decizie
     predictie_y = probabilitati >= THRESHOLD_PREDICTIE
-    corecte = predictie_y == y 
+    corecte = predictie_y == y
 
     return corecte.mean() * 100
+
 
 def ruleaza_logistic_regression(train_data, test_data):
     X_train, y_train = get_date_model(train_data)
