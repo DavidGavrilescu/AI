@@ -3,7 +3,7 @@ import pandas as pd
 from afisare import afiseaza_rezultate
 from benchmark import compara_benchmark
 from data_processing import pregateste_date
-from logistic_regression import ruleaza_model_lr
+from logistic_regression import ruleaza_logistic_regression
 from ml_signal import adauga_ml_signal
 from q_learning import train_q_learning
 from train_test import pregateste_train_test
@@ -27,7 +27,7 @@ def main():
         test_probabilities,
         train_accuracy,
         test_accuracy,
-    ) = ruleaza_model_lr(train_data, test_data)
+    ) = ruleaza_logistic_regression(train_data, test_data)
 
     train_data["ml_probability"] = train_probabilities
     test_data["ml_probability"] = test_probabilities

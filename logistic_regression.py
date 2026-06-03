@@ -7,14 +7,12 @@ from config import (
     THRESHOLD_PREDICTIE,
 )
 
-
-def sigmoid(z):
-    # transforma scorul in probabilitate intre 0 si 1
+# transforma scorul z in probabilitate intre 0 si 1
+def g(z):
     return 1 / (1 + np.exp(-z))
 
 
-def get_model_data(data):
-    # X are feature-urile, y are raspunsul corect
+def get_date_model(data):
     X = data[NORMALIZED_FEATURE_COLUMNS].values
     y = data["ml_label"].values
 
@@ -22,65 +20,80 @@ def get_model_data(data):
 
 
 def train_logistic_regression(X, y):
-    # w sunt ponderile, b este bias-ul
-    numar_exemple = X.shape[0]
-    numar_featureuri = X.shape[1]
+    numar_exemple, numar_featureuri  = X.shape
 
-    w = np.zeros(numar_featureuri) # ponderi
-    b = 0 # bias
+    w = np.zeros(numar_featureuri) # ponderile sunt 0 la inceput
+    b = 0
+    alpha = LEARNING_RATE
 
     for _ in range(EPOCHS):
-        # z = combinatia liniara dintre feature-uri si ponderi
-        z = X @ w + b
+        # h_w(x) = w^T * f(x) + b
+        h_w_x = X @ w + b
 
-        # probabilitatea prezisa de model
-        g_z = sigmoid(z)
+        # g(z) = sigmoid(h_w(x))
+        g_z = g(h_w_x)
 
-        # cat de departe e predictia de raspunsul real
-        error = g_z - y
+        # eroarea folosita in gradient descent
+        delta_E = g_z - y
 
-        # gradientii spun in ce directie schimbam w si b
-        dw = X.T @ error / numar_exemple
-        db = np.mean(error)
 
-        # w si b se actualizeaza cu gradient descent
-        w = w - LEARNING_RATE * dw
-        b = b - LEARNING_RATE * db
+        """
+        X = [
+            [feature1_zi1, feature2_zi1],
+            [feature1_zi2, feature2_zi2],
+            [feature1_zi3, feature2_zi3]
+        ]
+        transpusa_X = [
+            [feature1_zi1, feature1_zi2, feature1_zi3],
+            [feature2_zi1, feature2_zi2, feature2_zi3]
+        ]
+        """
+        transpusa_X = X.T
+        
+        dw = transpusa_X @ delta_E / numar_exemple
+        db = np.mean(delta_E)
 
+        # gradient descent
+        w = w - alpha * dw
+        b = b - alpha * db
     return w, b
 
+# x e matrice de features, il inmultim cu ponderile w si adaugam biasl
+def prezicere_probabilitati(X, w, b):
+    return g(X @ w + b)
 
-def predict_probability(X, w, b):
-    # probabilitatea ca randamentul pe 5 zile sa fie peste mediana
-    z = X @ w + b
-    return sigmoid(z)
+# returneaza procentul de predictii corecte
+def calculeaza_acuratetea(probabilitati, y):
+    """
+    y = [1, 0, 1, 0]
+    predictie_y = [1, 0, 0, 1]
+    corecte = [True, True, False, False]
+    corecte.mean() -> (2/4) * 100 = 50.0
+    """
 
-
-def calculate_accuracy(probabilities, y):
-    # peste THRESHOLD_PREDICTIE inseamna ca modelul prezice 1
-    predictii = probabilities >= THRESHOLD_PREDICTIE
-    corecte = predictii == y
+    # clasa prezisa dupa pragul de decizie
+    predictie_y = probabilitati >= THRESHOLD_PREDICTIE
+    corecte = predictie_y == y 
 
     return corecte.mean() * 100
 
-# functia principala
-def ruleaza_model_lr(train_data, test_data):
-    X_train, y_train = get_model_data(train_data)
-    X_test, y_test = get_model_data(test_data)
+def ruleaza_logistic_regression(train_data, test_data):
+    X_train, y_train = get_date_model(train_data)
+    X_test, y_test = get_date_model(test_data)
 
     w, b = train_logistic_regression(X_train, y_train)
 
-    train_probabilities = predict_probability(X_train, w, b)
-    test_probabilities = predict_probability(X_test, w, b)
+    probabilitati_training = prezicere_probabilitati(X_train, w, b)
+    probabilitati_test = prezicere_probabilitati(X_test, w, b)
 
-    train_accuracy = calculate_accuracy(train_probabilities, y_train)
-    test_accuracy = calculate_accuracy(test_probabilities, y_test)
+    acuratete_training = calculeaza_acuratetea(probabilitati_training, y_train)
+    acuratete_test = calculeaza_acuratetea(probabilitati_test, y_test)
 
     return (
         w,
         b,
-        train_probabilities,
-        test_probabilities,
-        train_accuracy,
-        test_accuracy,
+        probabilitati_training,
+        probabilitati_test,
+        acuratete_training,
+        acuratete_test,
     )
