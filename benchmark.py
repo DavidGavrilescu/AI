@@ -12,8 +12,8 @@ SELL = "SELL"
 HOLD = "HOLD"
 
 
-def simuleaza_actiuni(test_data, alege_actiunea):
-    preturi = test_data["Close"].to_numpy()
+def simuleaza_actiuni(date_test, alege_actiunea):
+    preturi = date_test["Close"].to_numpy()
     cash = INITIAL_CASH
     actiuni_spy = 0
     tranzactii = 0
@@ -38,20 +38,20 @@ def simuleaza_actiuni(test_data, alege_actiunea):
             zile_in_piata += 1
 
     valoare_finala = cash + actiuni_spy * preturi[-1]
-    expunere = zile_in_piata / len(test_data) * 100
+    expunere = zile_in_piata / len(date_test) * 100
 
     return valoare_finala, tranzactii, expunere
 
 
-def ruleaza_buy_and_hold(test_data):
-    preturi = test_data["Close"].to_numpy()
+def ruleaza_buy_and_hold(date_test):
+    preturi = date_test["Close"].to_numpy()
     actiuni_spy = INITIAL_CASH * (1 - TRANSACTION_COST) / preturi[0]
 
     return actiuni_spy * preturi[-1], 1, 100
 
 
-def ruleaza_logistic_regression_only(test_data):
-    semnale = test_data["ml_signal"].to_numpy()
+def ruleaza_logistic_regression_only(date_test):
+    semnale = date_test["ml_signal"].to_numpy()
 
     def alege_actiunea(i, actiuni_spy):
         if semnale[i] == 2:
@@ -60,10 +60,10 @@ def ruleaza_logistic_regression_only(test_data):
             return SELL
         return HOLD
 
-    return simuleaza_actiuni(test_data, alege_actiunea)
+    return simuleaza_actiuni(date_test, alege_actiunea)
 
 
-def ruleaza_random_agent(test_data, seed):
+def ruleaza_random_agent(date_test, seed):
     rng = np.random.default_rng(seed)
 
     def alege_actiunea(i, actiuni_spy):
@@ -71,12 +71,12 @@ def ruleaza_random_agent(test_data, seed):
             return rng.choice([BUY, HOLD])
         return rng.choice([SELL, HOLD])
 
-    return simuleaza_actiuni(test_data, alege_actiunea)
+    return simuleaza_actiuni(date_test, alege_actiunea)
 
 
-def ruleaza_ml_q_learning(test_data, q_table):
+def ruleaza_ml_q_learning(date_test, q_table):
     def alege_actiunea(i, actiuni_spy):
-        rand = test_data.iloc[i]
+        rand = date_test.iloc[i]
         pozitie = int(actiuni_spy > 0)
         stare = get_state(rand["ml_signal"], pozitie, rand["trend"])
         actiune = alege_actiune_finala(q_table, stare, pozitie)
@@ -87,23 +87,23 @@ def ruleaza_ml_q_learning(test_data, q_table):
             return SELL
         return HOLD
 
-    return simuleaza_actiuni(test_data, alege_actiunea)
+    return simuleaza_actiuni(date_test, alege_actiunea)
 
 
-def compara_benchmark(test_data, q_table=None):
+def compara_benchmark(date_test, q_table=None):
     random_results = np.array([
-        ruleaza_random_agent(test_data, RANDOM_SEED + i)
+        ruleaza_random_agent(date_test, RANDOM_SEED + i)
         for i in range(RANDOM_RUNS)
     ])
 
     rows = [
-        ["buy and hold", *ruleaza_buy_and_hold(test_data)],
-        ["LR only", *ruleaza_logistic_regression_only(test_data)],
+        ["buy and hold", *ruleaza_buy_and_hold(date_test)],
+        ["LR only", *ruleaza_logistic_regression_only(date_test)],
         ["random agent avg", *random_results.mean(axis=0)],
     ]
 
     if q_table is not None:
-        rows.append(["ML + Q-learning", *ruleaza_ml_q_learning(test_data, q_table)])
+        rows.append(["ML + Q-learning", *ruleaza_ml_q_learning(date_test, q_table)])
 
     results = pd.DataFrame(rows, columns=[
         "strategie",
