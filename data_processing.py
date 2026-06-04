@@ -55,11 +55,12 @@ def pregateste_date():
         - volume_change: schimbarea volumului fata de ziua precedenta
         - ma_ratio: diferenta relativa dintre media mobila pe 5 zile si cea pe 20 de zile
 
-        Coloane folosite pentru ML label si RL reward:
-        - trend: 0 = descendent, 1 = neutru, 2 = ascendent, calculat din ma_ratio
-        - future_return_5d: randamentul peste 5 zile, folosit pentru label-ul ML si reward-ul RL
+        Coloane folosite pentru ML si RL:
+        - trend: 0 = descendent, 1 = neutru, 2 = ascendent, folosit in starea RL
+        - future_return_5d: randamentul peste 5 zile, folosit pentru label-ul ML
 
-        future_return_5d este folosit doar ca target/reward, nu ca feature de intrare pentru model.
+        future_return_5d este folosit doar ca target, nu ca feature de intrare pentru model.
+        Reward-ul RL se calculeaza separat din randamentul zilnic, ca in benchmark.
     """
     date["daily_return"] = date["Close"].pct_change()
     date["open_close_return"] = (date["Close"] - date["Open"]) / date["Open"]

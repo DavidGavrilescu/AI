@@ -56,7 +56,7 @@ def main():
         acuratete_test,
     )
 
-    # comparam doar strategiile finale
+    # comparam strategiile pe test
     rezultate_benchmark = compara_strategii(test_data, q_table, q_table_fara_ml)
     print("\nbenchmark:")
     print(rezultate_benchmark.to_string(index=False))

@@ -2,7 +2,6 @@ import numpy as np
 
 from config import (
     Q_ALPHA,
-    Q_PENALIZARE_COST_OPORTUNITATE_CASH,
     Q_EPISODES,
     Q_EPSILON_DECAY,
     Q_EPSILON_MIN,
@@ -19,6 +18,7 @@ HOLD = 2
 
 CASH = 0
 SPY = 1
+POZITII_POSIBILE = [CASH, SPY]
 
 NUMAR_SEMNALE_ML = 3
 NUMAR_POZITII = 2
@@ -50,11 +50,25 @@ def actiuni_valide(pozitie):
     return [SELL, HOLD]
 
 
+def alege_actiune_greedy(q_table, stare, actiuni_posibile):
+    # daca valorile sunt egale, HOLD este alegerea neutra si evita tranzactii inutile
+    actiune_aleasa = HOLD if HOLD in actiuni_posibile else actiuni_posibile[0]
+    valoare_maxima = q_table[stare, actiune_aleasa]
+
+    for actiune in actiuni_posibile:
+        valoare = q_table[stare, actiune]
+        if valoare > valoare_maxima:
+            valoare_maxima = valoare
+            actiune_aleasa = actiune
+
+    return actiune_aleasa
+
+
 def alege_actiune(q_table, stare, actiuni_posibile, epsilon, generator_random):
     if generator_random.random() < epsilon:
         return generator_random.choice(actiuni_posibile)
 
-    return actiuni_posibile[np.argmax(q_table[stare, actiuni_posibile])]
+    return alege_actiune_greedy(q_table, stare, actiuni_posibile)
 
 
 def actualizeaza_pozitia(pozitie, actiune):
@@ -66,21 +80,20 @@ def actualizeaza_pozitia(pozitie, actiune):
 
 
 def calculeaza_recompensa(
-    rand,
-    pozitie_urmatoare,
+    randament_zilnic,
+    pozitie_curenta,
     actiune,
-    penalizare_cash,
     penalizare_tranzactie,
 ):
-    # recompensa este randamentul pe 5 zile dupa actiune
-    randament_piata = rand["future_return_5d"] * PROCENTE
+    # recompensa urmareste aceeasi cronologie ca benchmark-ul:
+    # portofoliul curent castiga/pierde pe miscarea zilnica, apoi tranzactia are cost
+    randament_piata = randament_zilnic * PROCENTE
     randament_piata = float(np.clip(randament_piata, -LIMITA_RECOMPENSA, LIMITA_RECOMPENSA))
 
-    if pozitie_urmatoare == SPY:
+    if pozitie_curenta == SPY:
         recompensa = randament_piata
     else:
-        # cash-ul e bun cand piata scade, dar rau cand piata urca
-        recompensa = -penalizare_cash * randament_piata
+        recompensa = 0.0 # fara castig sau pierdere daca suntem cash
 
     if actiune in [BUY, SELL]:
         recompensa -= penalizare_tranzactie
@@ -90,87 +103,67 @@ def calculeaza_recompensa(
 
 def initializeaza_q_table():
     q_table = np.zeros((NUMAR_STARI, NUMAR_ACTIUNI))
-
-    """
-    Initializeaza Q-table-ul: pentru fiecare stare si actiune memoram o valoare Q.
-
-    Valorile nu sunt inca invatate; sunt doar valori initiale.
-    Le setam usor optimist pentru actiunile valide ca agentul sa nu porneasca
-    cu toate actiunile egale si sa nu aleaga mereu prima actiune prin argmax.
-    """
-    for ml_signal in range(NUMAR_SEMNALE_ML):
-        for trend in range(NUMAR_TRENDS):
-            stare_cash = stare_q_learning(ml_signal, CASH, trend)
-            stare_spy = stare_q_learning(ml_signal, SPY, trend)
-
-            q_table[stare_cash, BUY] = 2.0
-            q_table[stare_cash, HOLD] = 1.0
-            q_table[stare_spy, HOLD] = 2.5
-            q_table[stare_spy, SELL] = 1.0
-
     return q_table
 
 
 def train_q_learning(
     date_train,
-    penalizare_cash=Q_PENALIZARE_COST_OPORTUNITATE_CASH,
     penalizare_tranzactie=Q_PENALIZARE_TRANZACTIE,
     seed=Q_SEED_RANDOM,
 ):
     q_table = initializeaza_q_table()
     generator_random = np.random.default_rng(seed)
 
-    randuri = date_train[["ml_signal", "trend", "future_return_5d"]].to_dict("records")
+    randuri = date_train[["ml_signal", "trend", "Close"]].to_dict("records")
 
     for episod in range(Q_EPISODES):
         epsilon = max(Q_EPSILON_MIN, Q_EPSILON_START * (Q_EPSILON_DECAY ** episod))
-        pozitie = CASH
 
         for i in range(len(randuri) - 1):
             rand = randuri[i]
             rand_urmator = randuri[i + 1]
+            randament_zilnic = rand_urmator["Close"] / rand["Close"] - 1
 
-            stare = stare_q_learning(rand["ml_signal"], pozitie, rand["trend"])
-            actiuni_posibile = actiuni_valide(pozitie)
-            actiune = alege_actiune(
-                q_table,
-                stare,
-                actiuni_posibile,
-                epsilon,
-                generator_random,
-            )
+            # Q-table-ul are putine stari, deci putem invata ambele pozitii posibile
+            for pozitie in POZITII_POSIBILE:
+                stare = stare_q_learning(rand["ml_signal"], pozitie, rand["trend"])
+                actiuni_posibile = actiuni_valide(pozitie)
+                actiune = alege_actiune(
+                    q_table,
+                    stare,
+                    actiuni_posibile,
+                    epsilon,
+                    generator_random,
+                )
 
-            pozitie_urmatoare = actualizeaza_pozitia(pozitie, actiune)
-            recompensa = calculeaza_recompensa(
-                rand,
-                pozitie_urmatoare,
-                actiune,
-                penalizare_cash,
-                penalizare_tranzactie,
-            )
+                pozitie_urmatoare = actualizeaza_pozitia(pozitie, actiune)
+                recompensa = calculeaza_recompensa(
+                    randament_zilnic,
+                    pozitie,
+                    actiune,
+                    penalizare_tranzactie,
+                )
 
-            stare_urmatoare = stare_q_learning(
-                rand_urmator["ml_signal"],
-                pozitie_urmatoare,
-                rand_urmator["trend"],
-            )
-            actiuni_posibile_urmatoare = actiuni_valide(pozitie_urmatoare)
-            valoare_urmatoare_maxima = max(
-                q_table[stare_urmatoare, actiune_urmatoare]
-                for actiune_urmatoare in actiuni_posibile_urmatoare
-            )
+                stare_urmatoare = stare_q_learning(
+                    rand_urmator["ml_signal"],
+                    pozitie_urmatoare,
+                    rand_urmator["trend"],
+                )
+                actiuni_posibile_urmatoare = actiuni_valide(pozitie_urmatoare)
+                valoare_urmatoare_maxima = max(
+                    q_table[stare_urmatoare, actiune_urmatoare]
+                    for actiune_urmatoare in actiuni_posibile_urmatoare
+                )
 
-            q_table[stare, actiune] += Q_ALPHA * (
-                recompensa
-                + Q_GAMMA * valoare_urmatoare_maxima
-                - q_table[stare, actiune]
-            )
-
-            pozitie = pozitie_urmatoare
+                q_table[stare, actiune] += Q_ALPHA * (
+                    recompensa
+                    + Q_GAMMA * valoare_urmatoare_maxima
+                    - q_table[stare, actiune]
+                )
 
     return q_table
 
 
 def alege_actiune_finala(q_table, stare, pozitie):
     actiuni_posibile = actiuni_valide(pozitie)
-    return actiuni_posibile[np.argmax(q_table[stare, actiuni_posibile])]
+    return alege_actiune_greedy(q_table, stare, actiuni_posibile)

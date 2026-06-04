@@ -63,6 +63,9 @@ def pregateste_train_test(data):
         train_data,
         test_data,
     )
-    train_data, test_data = normalizeaza_features(train_data, test_data)
+    train_data, test_data = normalizeaza_features(
+        train_data,
+        test_data,
+    )
 
     return train_data, test_data, prag_mediana_train

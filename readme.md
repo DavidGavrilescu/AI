@@ -1,6 +1,6 @@
 # proiect ai
 
-proiectul lucreaza cu date pentru SPY si incearca sa compare cateva strategii simple de trading.
+proiectul lucreaza cu date pentru tickerul setat in `config.py` si incearca sa compare cateva strategii simple de trading.
 
 ideea principala este:
 - iau datele din yfinance
@@ -18,7 +18,7 @@ strategii comparate:
 - Q-learning fara ML
 
 date:
-- ticker: SPY
+- ticker: se seteaza din `config.py`
 - perioada: 2010-01-01 -> 2019-01-01
 - sursa datelor: yfinance
 - fisier local: `spy_data.csv`
@@ -26,7 +26,7 @@ date:
 datele se salveaza in `spy_data.csv`, ca sa nu fie descarcate de fiecare data.
 
 pipeline:
-- incarca datele SPY
+- incarca datele tickerului ales
 - calculeaza feature-urile
 - imparte datele in train si test
 - face label-ul pentru Logistic Regression
@@ -48,7 +48,7 @@ mai sunt calculate si:
 - `trend`: 0 = descendent, 1 = neutru, 2 = ascendent
 - `future_return_5d`: randamentul peste 5 zile
 
-`future_return_5d` nu este folosit ca feature pentru model. Este folosit doar pentru label si pentru recompensa din Q-learning.
+`future_return_5d` nu este folosit ca feature pentru model. Este folosit doar pentru label-ul Logistic Regression.
 
 train/test:
 - primele 70% din date sunt train
@@ -77,9 +77,10 @@ Q-learning:
 - actiunile sunt BUY, SELL, HOLD
 - daca agentul e cash, poate cumpara sau face HOLD
 - daca agentul are SPY, poate vinde sau face HOLD
-- recompensa vine din `future_return_5d`
+- recompensa vine din randamentul zilnic al portofoliului, ca in benchmark
 - tranzactiile au cost
-- cash-ul este penalizat putin cand piata urca
+- cash-ul are randament 0
+- Q-table-ul este actualizat pentru ambele pozitii posibile la fiecare pas, ca agentul sa invete si valoarea de a fi deja in piata
 - epsilon scade treptat, deci agentul exploreaza mai mult la inceput
 
 am pus doua variante:
@@ -88,6 +89,7 @@ am pus doua variante:
 
 benchmark:
 - toate strategiile se ruleaza pe test
+- datele de test sunt folosite doar pentru evaluarea finala, nu pentru antrenare
 - decizia de azi se executa maine
 - portofoliul incepe cu 100000 cash
 - costul de tranzactie este 0.05%
