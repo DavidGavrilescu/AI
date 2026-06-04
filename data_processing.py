@@ -40,10 +40,9 @@ def pregateste_date():
 
         Coloane folosite pentru ML label si RL reward:
         - trend: 0 = descendent, 1 = neutru, 2 = ascendent, calculat din ma_ratio
-        - future_return: randamentul zilei urmatoare
         - future_return_5d: randamentul peste 5 zile, folosit pentru label-ul ML si reward-ul RL
 
-        Valorile future_return si future_return_5d sunt folosite doar ca target/reward, nu ca feature-uri de intrare pentru model.
+        future_return_5d este folosit doar ca target/reward, nu ca feature de intrare pentru model.
     """
     date["daily_return"] = date["Close"].pct_change()
     date["open_close_return"] = (date["Close"] - date["Open"]) / date["Open"]
@@ -55,8 +54,7 @@ def pregateste_date():
     date["ma_20"] = date["Close"].rolling(window=20).mean()
     date["ma_ratio"] = date["ma_5"] / date["ma_20"] - 1
 
-    # randamente viitoare, folosite la label si reward
-    date["future_return"] = date["Close"].shift(-1) / date["Close"] - 1
+    # randamentul viitor pe 5 zile, folosit la label si reward
     date["future_return_5d"] = date["Close"].shift(-5) / date["Close"] - 1
 
     # 0 = descendent, 1 = neutru, 2 = ascendent

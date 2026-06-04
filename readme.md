@@ -46,10 +46,9 @@ feature-uri:
 
 mai sunt calculate si:
 - `trend`: 0 = descendent, 1 = neutru, 2 = ascendent
-- `future_return`: randamentul zilei urmatoare
 - `future_return_5d`: randamentul peste 5 zile
 
-`future_return` si `future_return_5d` nu sunt folosite ca feature-uri pentru model. Ele sunt folosite doar pentru label si pentru recompensa din Q-learning.
+`future_return_5d` nu este folosit ca feature pentru model. Este folosit doar pentru label si pentru recompensa din Q-learning.
 
 train/test:
 - primele 70% din date sunt train

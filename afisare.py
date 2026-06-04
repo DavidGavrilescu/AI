@@ -8,7 +8,7 @@ from config import (
 
 
 def calculeaza_baseline(date):
-    # baseline: valoarea ml_label cea mai frecventa (buy, hold sau sell)
+    # baseline: acuratetea daca prezicem mereu clasa majoritara
     return date["ml_label"].value_counts(normalize=True).max() * 100
 
 def afiseaza_interval(nume, date):
