@@ -1,8 +1,13 @@
 # date generale ale proiectului
-TICKER = "SPY"
+TICKER = "SPV"
 START_DATE = "2010-01-01"
-END_DATE = "2019-01-01" # yfinance nu include data de final
-DATA_FILE = "spy_data.csv"
+END_DATE = "2019-01-01" # data de final nu este inclusa
+
+FISIERE_DATE = {
+    "SPY": "SPY.csv",
+    "QQQ": "QQQ.csv",
+}
+DATA_FILE = FISIERE_DATE[TICKER.upper()]
 
 TRAIN_RATIO = 0.70
 TREND_THRESHOLD = 0.005
@@ -23,7 +28,7 @@ Q_EPSILON_START = 0.3 # explorare ridicata la inceput
 Q_EPSILON_MIN = 0.01 # explorare minima la sfarsit
 Q_EPSILON_DECAY = 0.993 # scade treptat explorarea
 Q_PENALIZARE_TRANZACTIE = TRANSACTION_COST * 100 # cost real, pe scala reward-ului
-Q_PENALIZARE_COST_OPORTUNITATE_CASH = 0.25 # cash-ul e penalizat partial cand piata urca
+Q_PENALIZARE_COST_OPORTUNITATE_CASH = 0.2 # cash-ul e penalizat partial cand piata urca
 Q_SEED_RANDOM = 42
 
 # prag pentru predictia LR

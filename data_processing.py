@@ -1,28 +1,45 @@
-import os
-
 import pandas as pd
-import yfinance as yf
 
 from config import DATA_FILE, END_DATE, START_DATE, TICKER, TREND_THRESHOLD
 
 
 def incarca_date_spy():
-    # folosim aceleasi date la fiecare rulare, ca rezultatele sa fie stabile
-    if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE, parse_dates=["Date"])
+    # folosim CSV-ul local Kaggle, ca rezultatele sa fie reproductibile
+    date = pd.read_csv(DATA_FILE)
+    date.columns = [coloana.strip().lower() for coloana in date.columns]
 
-    date = yf.download(
-        TICKER,
-        start=START_DATE,
-        end=END_DATE,
-        auto_adjust=True,
-        progress=False,
-        multi_level_index=False,
-    )
-    date = date.reset_index()
-    date.to_csv(DATA_FILE, index=False)
+    coloane_necesare = {
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "adjusted_close",
+    }
+    coloane_lipsa = coloane_necesare - set(date.columns)
+    if coloane_lipsa:
+        raise ValueError(
+            f"{DATA_FILE} nu are coloanele necesare: {sorted(coloane_lipsa)}"
+        )
 
-    return date
+    date["Date"] = pd.to_datetime(date["date"])
+    data_inceput = pd.Timestamp(START_DATE)
+    data_final = pd.Timestamp(END_DATE)
+    date = date[(date["Date"] >= data_inceput) & (date["Date"] < data_final)].copy()
+    date = date.sort_values("Date").reset_index(drop=True)
+
+    factor_ajustare = date["adjusted_close"] / date["close"]
+    date_pregatite = pd.DataFrame({
+        "Date": date["Date"],
+        "Open": date["open"] * factor_ajustare,
+        "High": date["high"] * factor_ajustare,
+        "Low": date["low"] * factor_ajustare,
+        "Close": date["adjusted_close"],
+        "Volume": date["volume"],
+    })
+
+    return date_pregatite
 
 
 def pregateste_date():

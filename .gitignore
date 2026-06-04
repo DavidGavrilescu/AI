@@ -1,3 +1,5 @@
 experiments/**
 __pycache__/**
 *.csv
+!SPY.csv
+!QQQ.csv
