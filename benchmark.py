@@ -123,11 +123,13 @@ def ruleaza_ml_q_learning(date_test, q_table):
     return simuleaza_actiuni(date_test, alege_actiunea)
 
 
-def compara_strategii(date_test, q_table=None):
+def compara_strategii(date_test, q_table=None, q_table_fara_ml=None):
     rezultate_random = np.array([
         ruleaza_random_agent(date_test, RANDOM_SEED + i)
         for i in range(RANDOM_RUNS)
     ])
+    date_test_fara_ml = date_test.copy()
+    date_test_fara_ml["ml_signal"] = 1
 
     randuri = [
         ["buy and hold", *ruleaza_buy_and_hold(date_test)],
@@ -137,6 +139,12 @@ def compara_strategii(date_test, q_table=None):
 
     if q_table is not None:
         randuri.append(["ML + Q-learning", *ruleaza_ml_q_learning(date_test, q_table)])
+
+    if q_table_fara_ml is not None:
+        randuri.append([
+            "Q-learning fara ML",
+            *ruleaza_ml_q_learning(date_test_fara_ml, q_table_fara_ml),
+        ])
 
     rezultate = pd.DataFrame(randuri, columns=[
         "strategie",

@@ -39,6 +39,11 @@ def main():
     # q-learning foloseste semnalul LR + trendul
     q_table = train_q_learning(train_data)
 
+    # q-learning fara ML signal foloseste doar pozitia + trendul
+    train_data_fara_ml = train_data.copy()
+    train_data_fara_ml["ml_signal"] = 1
+    q_table_fara_ml = train_q_learning(train_data_fara_ml)
+
     # output scurt pentru model
     afiseaza_rezultate(
         date,
@@ -52,7 +57,7 @@ def main():
     )
 
     # comparam doar strategiile finale
-    rezultate_benchmark = compara_strategii(test_data, q_table)
+    rezultate_benchmark = compara_strategii(test_data, q_table, q_table_fara_ml)
     print("\nbenchmark:")
     print(rezultate_benchmark.to_string(index=False))
 
