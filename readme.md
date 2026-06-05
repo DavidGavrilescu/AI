@@ -9,7 +9,6 @@ Ideea pe scurt:
 - transform probabilitatea modelului intr-un semnal discret
 - folosesc semnalul asta intr-un agent Q-learning
 - compar strategiile pe perioada de test
-- generez graficele folosite in lucrare
 
 ## Date
 
@@ -142,29 +141,6 @@ In benchmark se afiseaza:
 - Sharpe Ratio
 - Max Drawdown %
 
-## Grafice
-
-Graficele sunt generate cu:
-
-```bash
-python grafice/genereaza_grafice.py
-```
-
-Scriptul genereaza grafice pentru SPY si QQQ, indiferent ce ticker este setat in `config.py`.
-
-Imaginile salvate in `grafice/` sunt:
-
-- `equity_curve_SPY.png`
-- `equity_curve_QQQ.png`
-- `politica_q_learning_heatmap.png`
-- `q_values_cash_spy_vs_qqq.png`
-- `confusion_matrix_lr.png`
-- `probabilitati_lr_histogram.png`
-- `drawdown_comparativ.png`
-- `feature_distribution.png`
-
-Titlurile mari sunt scoase din imagini, pentru ca sunt puse separat in LaTeX. Pentru figurile care contin mai multe panouri, am lasat titluri mici de panou, ca sa se inteleaga ce este SPY, QQQ, cash, investit etc.
-
 ## Fisiere
 
 - `main.py`: ruleaza pipeline-ul principal pentru tickerul din `config.py`
@@ -176,7 +152,6 @@ Titlurile mari sunt scoase din imagini, pentru ca sunt puse separat in LaTeX. Pe
 - `q_learning.py`: agentul Q-learning
 - `benchmark.py`: simulari si metrici pentru strategii
 - `afisare.py`: afiseaza rezultatele in consola
-- `grafice/genereaza_grafice.py`: genereaza imaginile pentru lucrare
 
 ## Instalare
 
@@ -187,7 +162,6 @@ pip install -r requirements.txt
 Biblioteci folosite:
 - `numpy`
 - `pandas`
-- `matplotlib`
 
 ## Rulare
 
