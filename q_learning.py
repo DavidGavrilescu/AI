@@ -30,7 +30,6 @@ STARI_PER_POZITIE = NUMAR_TRENDS
 NUMAR_STARI = NUMAR_SEMNALE_ML * NUMAR_POZITII * NUMAR_TRENDS
 
 PROCENTE = 100
-LIMITA_RECOMPENSA = 5.0
 
 
 def stare_q_learning(ml_signal, pozitie, trend):
@@ -88,7 +87,6 @@ def calculeaza_recompensa(
     # recompensa urmareste aceeasi cronologie ca benchmark-ul:
     # portofoliul curent castiga/pierde pe miscarea zilnica, apoi tranzactia are cost
     randament_piata = randament_zilnic * PROCENTE
-    randament_piata = float(np.clip(randament_piata, -LIMITA_RECOMPENSA, LIMITA_RECOMPENSA))
 
     if pozitie_curenta == SPY:
         recompensa = randament_piata

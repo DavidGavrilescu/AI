@@ -1,5 +1,5 @@
 # date generale ale proiectului
-TICKER = "QQQ"
+TICKER = "SPY"
 START_DATE = "2010-01-01"
 END_DATE = "2019-01-01" # data de final nu este inclusa
 
