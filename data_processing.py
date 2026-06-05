@@ -72,7 +72,7 @@ def pregateste_date():
     date["ma_20"] = date["Close"].rolling(window=20).mean()
     date["ma_ratio"] = date["ma_5"] / date["ma_20"] - 1
 
-    # randamentul viitor pe 5 zile, folosit la label si reward
+    # randamentul viitor pe 5 zile, folosit la label-ul Logistic Regression
     date["future_return_5d"] = date["Close"].shift(-5) / date["Close"] - 1
 
     # 0 = descendent, 1 = neutru, 2 = ascendent
