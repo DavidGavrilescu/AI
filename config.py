@@ -22,8 +22,8 @@ RANDOM_SEED = 42
 
 # q-learning
 Q_EPISODES = 500
-Q_ALPHA = 0.1
-Q_GAMMA = 0.9
+Q_RATA_DE_INVATARE = 0.1
+Q_RECOMPENSA_VIITOARE = 0.9
 Q_EPSILON_START = 0.3 # explorare ridicata la inceput
 Q_EPSILON_MIN = 0.01 # explorare minima la sfarsit
 Q_EPSILON_DECAY = 0.993 # scade treptat explorarea

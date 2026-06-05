@@ -4,7 +4,6 @@ from config import DATA_FILE, END_DATE, START_DATE, TICKER, TREND_THRESHOLD
 
 
 def incarca_date():
-    # folosim CSV-ul local Kaggle, ca rezultatele sa fie reproductibile
     date = pd.read_csv(DATA_FILE)
     date.columns = [coloana.strip().lower() for coloana in date.columns]
 
@@ -59,8 +58,8 @@ def pregateste_date():
         - trend: 0 = descendent, 1 = neutru, 2 = ascendent, folosit in starea RL
         - future_return_5d: randamentul peste 5 zile, folosit pentru label-ul ML
 
-        future_return_5d este folosit doar ca target, nu ca feature de intrare pentru model.
-        Reward-ul RL se calculeaza separat din randamentul zilnic, ca in benchmark.
+        future_return_5d este folosit doar ca target, nu ca feature de intrare pentru model
+        Reward-ul RL se calculeaza separat din randamentul zilnic, ca in benchmark
     """
     date["daily_return"] = date["Close"].pct_change()
     date["open_close_return"] = (date["Close"] - date["Open"]) / date["Open"]

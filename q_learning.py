@@ -25,12 +25,12 @@ Politica finala pi(s) alege actiunea valida cu valoarea Q maxima.
 import numpy as np
 
 from config import (
-    Q_ALPHA,
+    Q_RATA_DE_INVATARE,
     Q_EPISODES,
     Q_EPSILON_DECAY,
     Q_EPSILON_MIN,
     Q_EPSILON_START,
-    Q_GAMMA,
+    Q_RECOMPENSA_VIITOARE,
     Q_SEED_RANDOM,
     Q_PENALIZARE_TRANZACTIE,
 )
@@ -188,9 +188,9 @@ def train_q_learning(
                     for a_urmatoare in actiuni_posibile_urmatoare
                 )
 
-                q_table[stare, actiune] = q_table[stare, actiune] + Q_ALPHA * (
+                q_table[stare, actiune] = q_table[stare, actiune] + Q_RATA_DE_INVATARE * (
                     recompensa
-                    + Q_GAMMA * max_q_urmator
+                    + Q_RECOMPENSA_VIITOARE * max_q_urmator
                     - q_table[stare, actiune]
                 )
 
