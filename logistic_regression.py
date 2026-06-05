@@ -27,16 +27,14 @@ def train_logistic_regression(X, y):
     alpha = LEARNING_RATE
 
     for _ in range(EPOCHS):
-        # h_w(x) = w^T * f(x) + b
-        h_w_x = X @ w + b
+        # z = w^T * x + b
+        z = X @ w + b
 
-        # g(z) = sigmoid(h_w(x))
-        g_z = g(h_w_x)
-
+        # g(z) = probabilitatea clasei 1
         # eroarea folosita in gradient descent
-        delta_E = g_z - y
+        delta_E = g(z) - y
 
-        # X.T intoarce matricea ca sa putem calcula gradientul pentru fiecare pondere
+        # X.T matricea trnspusa ca sa putem calcula gradientul pentru fiecare pondere
         transpusa_X = X.T
 
         dw = transpusa_X @ delta_E / numar_exemple

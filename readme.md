@@ -1,134 +1,198 @@
 # proiect ai
 
-proiectul lucreaza cu date pentru tickerul setat in `config.py` si incearca sa compare cateva strategii simple de trading.
+Proiectul compara cateva strategii simple de trading pe ETF-urile SPY si QQQ.
 
-ideea principala este:
-- iau datele din yfinance
-- fac cateva feature-uri din pret si volum
-- antrenez un Logistic Regression
-- transform rezultatul lui intr-un semnal simplu
-- folosesc semnalul asta si in Q-learning
-- la final compar strategiile pe datele de test
+Ideea pe scurt:
+- iau date istorice din fisierele locale `SPY.csv` si `QQQ.csv`
+- construiesc cateva feature-uri din pret si volum
+- antrenez un Logistic Regression facut manual cu `numpy`
+- transform probabilitatea modelului intr-un semnal discret
+- folosesc semnalul asta intr-un agent Q-learning
+- compar strategiile pe perioada de test
+- generez graficele folosite in lucrare
 
-strategii comparate:
-- buy and hold
-- LR only
-- random agent
-- ML + Q-learning
-- Q-learning fara ML
+## Date
 
-date:
-- ticker: se seteaza din `config.py`
-- perioada: 2010-01-01 -> 2019-01-01
-- sursa datelor: yfinance
-- fisier local: `spy_data.csv`
+Datele sunt luate din fisiere CSV locale, ca rezultatele sa fie reproductibile.
+Sursa datelor este Kaggle - `S&P 500 and NASDAQ 100 Daily Data`.
+Fisierele folosite in proiect sunt `SPY.csv` si `QQQ.csv`.
 
-datele se salveaza in `spy_data.csv`, ca sa nu fie descarcate de fiecare data.
+In `config.py` se seteaza tickerul folosit de `main.py`:
 
-pipeline:
-- incarca datele tickerului ales
-- calculeaza feature-urile
-- imparte datele in train si test
-- face label-ul pentru Logistic Regression
-- normalizeaza feature-urile
-- antreneaza Logistic Regression
-- transforma probabilitatea in `ml_signal`
-- antreneaza Q-learning pe train
-- testeaza strategiile pe test
-- afiseaza benchmark-ul
+```python
+TICKER = "SPY"
+```
 
-feature-uri:
+Tickere disponibile:
+- `SPY`
+- `QQQ`
+
+Perioada folosita este:
+- start: `2010-01-01`
+- final: `2019-01-01` (data de final nu este inclusa)
+
+## Pipeline
+
+Pipeline-ul principal face urmatorii pasi:
+
+1. incarca datele pentru tickerul ales
+2. ajusteaza preturile folosind `adjusted_close`
+3. calculeaza feature-urile
+4. imparte datele in train si test
+5. construieste label-ul pentru Logistic Regression
+6. normalizeaza feature-urile cu min/max din train
+7. antreneaza Logistic Regression
+8. transforma probabilitatile in `ml_signal`
+9. antreneaza Q-learning
+10. ruleaza benchmark-ul pe datele de test
+
+Split-ul este cronologic:
+- 70% train
+- 30% test
+
+## Feature-uri
+
+Feature-urile folosite de Logistic Regression sunt:
+
 - `daily_return`: randamentul fata de ziua precedenta
-- `open_close_return`: cat s-a miscat pretul de la Open la Close
-- `high_low_range`: diferenta High-Low raportata la Close
-- `volume_change`: schimbarea volumului
-- `ma_ratio`: diferenta dintre media mobila pe 5 zile si cea pe 20 de zile
+- `open_close_return`: miscarea dintre Open si Close
+- `high_low_range`: intervalul High-Low raportat la Close
+- `volume_change`: schimbarea volumului fata de ziua precedenta
+- `ma_ratio`: diferenta relativa dintre media mobila pe 5 zile si cea pe 20 de zile
 
-mai sunt calculate si:
+Mai sunt calculate:
 - `trend`: 0 = descendent, 1 = neutru, 2 = ascendent
 - `future_return_5d`: randamentul peste 5 zile
 
-`future_return_5d` nu este folosit ca feature pentru model. Este folosit doar pentru label-ul Logistic Regression.
+`future_return_5d` este folosit doar pentru target, nu ca feature de intrare.
 
-train/test:
-- primele 70% din date sunt train
-- ultimele 30% din date sunt test
-- `ml_label` se face dupa mediana lui `future_return_5d` din train
-- normalizarea se face cu min si max din train
+## Logistic Regression
 
-Logistic Regression:
-- este facut manual cu numpy
+Logistic Regression este implementat manual in `logistic_regression.py`.
+
+Modelul:
 - foloseste sigmoid
-- ponderile incep de la 0
+- porneste cu ponderile 0
 - se antreneaza cu gradient descent
-- prezice daca randamentul pe 5 zile este peste mediana din train
-- pragul de predictie este 0.5
+- prezice daca randamentul viitor pe 5 zile este peste mediana din train
 
-`ml_signal`:
-- 0 daca probabilitatea e sub prag
-- 1 daca probabilitatea e in zona de incertitudine
-- 2 daca probabilitatea e peste prag
+Pragul de predictie este `0.5`.
 
-zona de incertitudine se seteaza din `SIGNAL_MARGIN`.
+Dupa predictie, probabilitatea este transformata in `ml_signal`:
 
-Q-learning:
-- starea este formata din `ml_signal`, pozitie si `trend`
-- pozitia este cash sau SPY
-- actiunile sunt BUY, SELL, HOLD
-- daca agentul e cash, poate cumpara sau face HOLD
-- daca agentul are SPY, poate vinde sau face HOLD
-- recompensa vine din randamentul zilnic al portofoliului, ca in benchmark
-- tranzactiile au cost
-- cash-ul are randament 0
-- Q-table-ul este actualizat pentru ambele pozitii posibile la fiecare pas, ca agentul sa invete si valoarea de a fi deja in piata
-- epsilon scade treptat, deci agentul exploreaza mai mult la inceput
+- `0`: probabilitate sub `0.49`
+- `1`: probabilitate intre `0.49` si `0.51`
+- `2`: probabilitate peste `0.51`
 
-am pus doua variante:
-- `ML + Q-learning`: foloseste `ml_signal` + pozitie + trend
-- `Q-learning fara ML`: ignora semnalul ML si foloseste doar pozitia + trendul
+Zona asta de incertitudine este data de `SIGNAL_MARGIN = 0.01`.
 
-benchmark:
-- toate strategiile se ruleaza pe test
-- datele de test sunt folosite doar pentru evaluarea finala, nu pentru antrenare
-- decizia de azi se executa maine
-- portofoliul incepe cu 100000 cash
-- costul de tranzactie este 0.05%
-- random agent se ruleaza de mai multe ori si se ia media
+## Q-learning
 
-in benchmark se afiseaza:
+Agentul Q-learning foloseste o stare formata din:
+
+- `ml_signal`
+- pozitia curenta: cash sau investit
+- `trend`
+
+Actiunile posibile sunt:
+
+- `BUY`
+- `SELL`
+- `HOLD`
+
+Daca agentul este cash, poate alege doar `BUY` sau `HOLD`.
+Daca agentul este investit, poate alege doar `SELL` sau `HOLD`.
+
+Recompensa vine din randamentul zilnic al pozitiei curente, pe aceeasi logica folosita in benchmark. Tranzactiile au cost, iar cash-ul are randament 0.
+
+Am doua variante:
+
+- `ML + Q-learning`: foloseste `ml_signal`, pozitia si trendul
+- `Q-learning fara ML`: ignora semnalul ML si foloseste doar pozitia si trendul
+
+## Strategii comparate
+
+Benchmark-ul compara:
+
+- `buy and hold`
+- `LR only`
+- `random agent avg`
+- `ML + Q-learning`
+- `Q-learning fara ML`
+
+Portofoliul porneste cu:
+
+```python
+CASH_INITIAL = 100000
+```
+
+Costul de tranzactie este:
+
+```python
+TRANSACTION_COST = 0.0005
+```
+
+Adica 0.05%.
+
+In benchmark se afiseaza:
 - valoare finala
 - randament %
-- tranzactii
+- numar de tranzactii
 - expunere %
 - Sharpe Ratio
 - Max Drawdown %
 
-fisiere:
-- `main.py`: ruleaza tot pipeline-ul
-- `config.py`: tine parametrii proiectului
-- `data_processing.py`: incarca datele si construieste feature-urile
-- `train_test.py`: imparte datele, face label-ul si normalizeaza
-- `logistic_regression.py`: antreneaza si evalueaza Logistic Regression
-- `ml_signal.py`: transforma probabilitatea LR in semnal discret
-- `q_learning.py`: partea de Q-learning
-- `benchmark.py`: simuleaza strategiile si calculeaza metricile
-- `afisare.py`: afiseaza rezultatele modelului
+## Grafice
 
-instalare:
+Graficele sunt generate cu:
+
+```bash
+python grafice/genereaza_grafice.py
+```
+
+Scriptul genereaza grafice pentru SPY si QQQ, indiferent ce ticker este setat in `config.py`.
+
+Imaginile salvate in `grafice/` sunt:
+
+- `equity_curve_SPY.png`
+- `equity_curve_QQQ.png`
+- `politica_q_learning_heatmap.png`
+- `q_values_cash_spy_vs_qqq.png`
+- `confusion_matrix_lr.png`
+- `probabilitati_lr_histogram.png`
+- `drawdown_comparativ.png`
+- `feature_distribution.png`
+
+Titlurile mari sunt scoase din imagini, pentru ca sunt puse separat in LaTeX. Pentru figurile care contin mai multe panouri, am lasat titluri mici de panou, ca sa se inteleaga ce este SPY, QQQ, cash, investit etc.
+
+## Fisiere
+
+- `main.py`: ruleaza pipeline-ul principal pentru tickerul din `config.py`
+- `config.py`: parametrii proiectului
+- `data_processing.py`: incarca datele si construieste feature-urile
+- `train_test.py`: split train/test, label si normalizare
+- `logistic_regression.py`: Logistic Regression manual
+- `ml_signal.py`: transforma probabilitatile in semnal discret
+- `q_learning.py`: agentul Q-learning
+- `benchmark.py`: simulari si metrici pentru strategii
+- `afisare.py`: afiseaza rezultatele in consola
+- `grafice/genereaza_grafice.py`: genereaza imaginile pentru lucrare
+
+## Instalare
+
 ```bash
 pip install -r requirements.txt
 ```
 
-ruleaza:
+Biblioteci folosite:
+- `numpy`
+- `pandas`
+- `matplotlib`
+
+## Rulare
+
+Pentru rezultatele principale:
+
 ```bash
 python main.py
 ```
-
-output-ul afiseaza:
-- intervalele train/test
-- feature-urile LR
-- baseline train/test
-- accuracy train/test
-- bias-ul si ponderile LR
-- cum se face `ml_signal`
-- tabelul de benchmark

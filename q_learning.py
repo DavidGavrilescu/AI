@@ -1,3 +1,27 @@
+"""
+Q-learning tabular pentru mediul de tranzactionare
+
+Mediul:
+- date istorice zilnice pentru ETF-ul ales
+- un episod = o parcurgere a perioadei de antrenare
+
+Starea:
+s = (ml_signal, pozitie, trend)
+
+Actiuni:
+A = {BUY, SELL, HOLD}
+
+Recompensa:
+R(s, a, s') este calculata din randamentul zilnic al portofoliului.
+Daca agentul detine activul, primeste randamentul zilnic procentual.
+Daca agentul este cash, recompensa este 0.
+Pentru BUY si SELL se aplica o penalizare de tranzactionare.
+
+Q-table:
+Q[s, a] retine valoarea estimata pentru actiunea a in starea s.
+Politica finala pi(s) alege actiunea valida cu valoarea Q maxima.
+"""
+
 import numpy as np
 
 from config import (
@@ -17,8 +41,8 @@ SELL = 1
 HOLD = 2
 
 CASH = 0
-SPY = 1
-POZITII_POSIBILE = [CASH, SPY]
+DETINE_ACTIV = 1
+POZITII_POSIBILE = [CASH, DETINE_ACTIV]
 
 NUMAR_SEMNALE_ML = 3
 NUMAR_POZITII = 2
@@ -33,7 +57,16 @@ PROCENTE = 100
 
 
 def stare_q_learning(ml_signal, pozitie, trend):
-    # combinam ml_signal + pozitie + trend intr-un singur numar de stare
+    """
+    Starea agentului RL este:
+    s = (ml_signal, pozitie, trend)
+
+    ml_signal: 0 = negativ, 1 = neutru, 2 = pozitiv
+    pozitie: 0 = cash, 1 = detine activ
+    trend: 0 = descendent, 1 = neutru, 2 = ascendent
+
+    Formula transforma starea compusa intr-un index din Q-table
+    """
     return (
         int(ml_signal) * STARI_PER_SEMNAL_ML
         + int(pozitie) * STARI_PER_POZITIE
@@ -42,7 +75,9 @@ def stare_q_learning(ml_signal, pozitie, trend):
 
 
 def actiuni_valide(pozitie):
-    # daca suntem cash nu putem vinde, daca avem SPY nu mai cumparam
+    # restrictii long-only:
+    # daca agentul este cash, actiunile valide sunt BUY si HOLD
+    # daca agentul detine activul, actiunile valide sunt SELL si HOLD
     if pozitie == CASH:
         return [BUY, HOLD]
 
@@ -72,7 +107,7 @@ def alege_actiune(q_table, stare, actiuni_posibile, epsilon, generator_random):
 
 def actualizeaza_pozitia(pozitie, actiune):
     if actiune == BUY:
-        return SPY
+        return DETINE_ACTIV
     if actiune == SELL:
         return CASH
     return pozitie
@@ -88,7 +123,7 @@ def calculeaza_recompensa(
     # portofoliul curent castiga/pierde pe miscarea zilnica, apoi tranzactia are cost
     randament_piata = randament_zilnic * PROCENTE
 
-    if pozitie_curenta == SPY:
+    if pozitie_curenta == DETINE_ACTIV:
         recompensa = randament_piata
     else:
         recompensa = 0.0 # fara castig sau pierdere daca suntem cash
@@ -148,14 +183,14 @@ def train_q_learning(
                     rand_urmator["trend"],
                 )
                 actiuni_posibile_urmatoare = actiuni_valide(pozitie_urmatoare)
-                valoare_urmatoare_maxima = max(
-                    q_table[stare_urmatoare, actiune_urmatoare]
-                    for actiune_urmatoare in actiuni_posibile_urmatoare
+                max_q_urmator = max(
+                    q_table[stare_urmatoare, a_urmatoare]
+                    for a_urmatoare in actiuni_posibile_urmatoare
                 )
 
-                q_table[stare, actiune] += Q_ALPHA * (
+                q_table[stare, actiune] = q_table[stare, actiune] + Q_ALPHA * (
                     recompensa
-                    + Q_GAMMA * valoare_urmatoare_maxima
+                    + Q_GAMMA * max_q_urmator
                     - q_table[stare, actiune]
                 )
 

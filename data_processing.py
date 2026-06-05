@@ -3,7 +3,7 @@ import pandas as pd
 from config import DATA_FILE, END_DATE, START_DATE, TICKER, TREND_THRESHOLD
 
 
-def incarca_date_spy():
+def incarca_date():
     # folosim CSV-ul local Kaggle, ca rezultatele sa fie reproductibile
     date = pd.read_csv(DATA_FILE)
     date.columns = [coloana.strip().lower() for coloana in date.columns]
@@ -43,7 +43,7 @@ def incarca_date_spy():
 
 
 def pregateste_date():
-    date = incarca_date_spy()
+    date = incarca_date()
 
     """
         Construim feature-uri din pret si volum.
@@ -72,7 +72,7 @@ def pregateste_date():
     date["ma_20"] = date["Close"].rolling(window=20).mean()
     date["ma_ratio"] = date["ma_5"] / date["ma_20"] - 1
 
-    # randamentul viitor pe 5 zile, folosit la label-ul Logistic Regression
+    # randamentul viitor pe 5 zile, folosit pentru label-ul Logistic Regression
     date["future_return_5d"] = date["Close"].shift(-5) / date["Close"] - 1
 
     # 0 = descendent, 1 = neutru, 2 = ascendent
